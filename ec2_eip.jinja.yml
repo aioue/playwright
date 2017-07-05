@@ -1,0 +1,35 @@
+---
+
+# ansible template file for ec2_eip
+
+#ansible 2.3.1.0
+#  config file =
+#  configured module search path = Default w/o overrides
+#  python version = 3.6.1 (default, Apr  4 2017, 09:40:21) [GCC 4.2.1 Compatible Apple LLVM 8.1.0 (clang-802.0.38)]
+
+# test without changes (dry-run):
+# ansible-playbook translate_terraform.yml -i inventory/tf-vpc-euc1/ --check -vvv --step
+
+{% for eip in json %}
+{% if ( eip['NetworkInterfaceId'] is not defined) and ( eip['InstanceId'] is not defined) %}
+# [{{ loop.index }}/{{ loop.length }}] - {{ eip['AllocationId'] }}: {{ eip ['PublicIp'] }} is not assigned to an instance or interface
+# skipping template due to ansible bug:
+# https://github.com/ansible/ansible/issues/26345
+
+{% continue %}
+{% endif %}
+- name: manage EC2 EIP address [{{ loop.index }}/{{ loop.length }}] {{ eip['AllocationId'] }}
+  ec2_eip:
+    device_id: {{ eip['NetworkInterfaceId'] if eip['NetworkInterfaceId'] is defined else eip['InstanceId'] }}
+    in_vpc: {{ 'yes' if eip['Domain'] == 'vpc' }}
+    private_ip_address: {{ eip['PrivateIpAddress'] }}
+    public_ip: {{ eip ['PublicIp'] }}
+    region: {{ region }}
+    release_on_disassociation:
+    reuse_existing_ip_allowed:
+    state: present
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+
+{% endfor %}

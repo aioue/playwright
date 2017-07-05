@@ -1,0 +1,71 @@
+---
+
+# ansible template file for ec2_elb_lb
+
+# ansible 2.3.1.0
+
+# test without changes (dry-run):
+# ansible-playbook translate_terraform.yml -i inventory/tf-vpc-euc1/ --check -vvv --step
+
+# ansible module does not support check mode
+# https://github.com/ansible/ansible/issues/26428
+
+{% for elb in json %}
+- name: manage ELB [{{ loop.index }}/{{ loop.length }}]
+  ec2_elb_lb:
+    access_logs: # TODO DescribeLoadBalancerAttributes
+    connection_draining_timeout: # TODO DescribeLoadBalancerAttributes
+    cross_az_load_balancing: yes # TODO DescribeLoadBalancerAttributes
+    health_check:
+      - ping_protocol: {{ '^\w+' | regex_search(elb['HealthCheck']['Target']) }}
+        ping_port: {{ '\d+' | regex_search(elb['HealthCheck']['Target']) }}
+        ping_path: {{ '/.*$' | regex_search(elb['HealthCheck']['Target']) }}
+        response_timeout: {{ elb['HealthCheck']['Timeout'] }}
+        interval: {{ elb['HealthCheck']['Interval'] }}
+        unhealthy_threshold: {{ elb['HealthCheck']['UnhealthyThreshold'] }}
+        healthy_threshold: {{ elb['HealthCheck']['HealthyThreshold'] }}
+    idle_timeout: # TODO DescribeLoadBalancerAttributes
+    instance_ids:
+      {% for instance in elb['Instances'] %}
+      - {{ instance['InstanceId'] }}
+      {% endfor %}
+    listeners:
+      {% for listener in elb['ListenerDescriptions'] %}
+      - protocol: {{ listener['Listener']['Protocol'] }}
+        load_balancer_port: {{ listener['Listener']['LoadBalancerPort'] }}
+        instance_protocol: {{ listener['Listener']['InstanceProtocol'] }}
+        instance_port: {{ listener['Listener']['InstancePort'] }}
+        ssl_certificate_id: {{ listener['Listener']['SSLCertificateId'] }}
+        proxy_protocol: # TODO
+      {% endfor %}
+    name: {{ elb['LoadBalancerName'] }}
+    purge_instance_ids:
+    purge_listeners:
+    purge_subnets:
+    purge_zones:
+    region: {{ region }}
+    scheme: {{ elb['Scheme'] }}
+    security_group_ids:
+      {% for secgroup in elb['SecurityGroups'] %}
+      - {{ secgroup }}
+      {% endfor %}
+    security_group_names: # using IDs instead
+    state: present
+    stickiness: # TODO
+    subnets:
+      {% for subnet in elb['Subnets'] %}
+      - {{ subnet }}
+      {% endfor %}
+    tags:
+    wait: yes
+    wait_timeout:
+    zones:
+      {% for az in elb['AvailabilityZones'] %}
+      - {{ az }}
+      {% endfor %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+
+{% endfor %}
+

@@ -1,0 +1,52 @@
+---
+
+# ansible template file for ec2_eip
+
+#ansible 2.3.1.0
+#  config file =
+#  configured module search path = Default w/o overrides
+#  python version = 3.6.1 (default, Apr  4 2017, 09:40:21) [GCC 4.2.1 Compatible Apple LLVM 8.1.0 (clang-802.0.38)]
+
+# test without changes (dry-run):
+# ansible-playbook translate_terraform.yml -i inventory/tf-vpc-euc1/ --check -vvv --step
+
+#- route53:
+#      state: present
+#      zone: foo.com
+#      record: new.foo.com
+#      type: A
+#      ttl: 7200
+#      value: 1.1.1.1,2.2.2.2,3.3.3.3
+#      wait: yes
+
+{% for zone in additional_json %}
+{% for record in json %}
+- name: manage route53 record [{{ loop.index }}/{{ loop.length }}]
+  route53:
+    alias:
+    alias_evaluate_target_health:
+    alias_hosted_zone_id:
+    failover:
+    health_check:
+    hosted_zone_id:
+    identifier:
+    overwrite:
+    private_zone:
+    record:
+    region: {{ region }}
+    retry_interval:
+    state: present
+    ttl:
+    type:
+    value:
+    vpc_id:
+    wait: yes
+    wait_timeout:
+    weight:
+    zone:
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+
+{% endfor %}
+{% endfor %}

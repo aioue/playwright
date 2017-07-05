@@ -1,0 +1,56 @@
+---
+
+# ansible template file for ec2_vpc_route_table
+
+#ansible 2.3.1.0
+#  config file =
+#  configured module search path = Default w/o overrides
+#  python version = 3.6.1 (default, Apr  4 2017, 09:40:21) [GCC 4.2.1 Compatible Apple LLVM 8.1.0 (clang-802.0.38)]
+
+
+# because we are making rules for existing route tables, we will be keying the creating by the name tag
+# routes not mentioned will be removed
+
+
+# test without changes (dry-run)
+# ansible-playbook translate_terraform.yml -i inventory/tf-vpc-euc1/ --check -vvv --step
+
+{# if in the list of "Routes" in this route, one of them has a key of 'GatewayId' that exists, and it's value is 'local', continue to next route #}
+# routes with origin: 'CreatRouteTable' are automatically made when the table is created and are usually default local routes and cannot be edited
+
+{% for route in json %}
+- name: create route table [{{ loop.index }}/{{ loop.length }}]
+  ec2_vpc_route_table:
+    {% if route['Tags']|length == 0 %}
+    lookup: id
+    {% else %}
+    lookup: tag
+    {% endif %}
+    propagating_vgw_ids: {{ route['PropagatingVgws'] }}
+    region: {{ region }}
+    route_table_id: {{ route['RouteTableId'] }}
+    routes:
+      {% for routel in route['Routes'] %}
+      # DestinationCidrBlock is not defined on routes containing a default Main VPC route. Since they are always present, they do not need to be created
+      {% if routel['DestinationCidrBlock'] is not defined %}{% continue %}{% endif %}
+      - dest: {{ routel['DestinationCidrBlock'] }}
+        gateway_id: {{ routel['NatGatewayId'] if routel['NatGatewayId'] is defined else routel['GatewayId'] }}
+        instance_id: {{ routel['InstanceId'] }}
+        interface_id: {{ routel['NetworkInterfaceId'] }}
+        vpc_peering_connection_id: {{ routel['VpcPeeringConnectionId'] }}
+      {% endfor %}
+    subnets:
+    {% for assoc in route['Associations'] %}
+      {% if assoc['SubnetId'] is not defined %}{% continue %}{% endif %}
+      - {{ assoc['SubnetId'] }}
+    {% endfor %}
+    tags:
+    {% for tag in route['Tags'] %}
+      {{ tag['Key'] }}: {{ tag['Value'] }}
+    {% endfor %}
+    vpc_id: {{ route['VpcId'] }}
+  # https://github.com/ansible/ansible/issues/26291
+  # during check mode, ansible will ignore errors. AWS throws "EC2ResponseError: 412 Precondition Failed" errors. Request would have succeeded, but DryRun flag is set.
+  ignore_errors: "{% raw %}{{ ansible_check_mode }}{% endraw %}"
+
+{% endfor %}
