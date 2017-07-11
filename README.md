@@ -9,7 +9,7 @@ Turns resources into Ansible tasks that can be included in a playbook.
 
 Useful for migrating from one config management system to another - e.g. Terraform to Ansible, where Terraform's tf.state file locks out share responsibility.
 
-## prerequistes
+## Pre-requistes
 
 - A configured AWS environment (~/.aws/)
   - configure using `aws configure`
