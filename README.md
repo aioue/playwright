@@ -1,5 +1,5 @@
 # playwright
-Creates Ansible playbook tasks files programatically from existing AWS resources.
+Creates Ansible playbook task files programatically from existing AWS resources.
 
 ## Description
 
