@@ -1,0 +1,26 @@
+---
+
+{% for subnet_group in json %}
+- name: rds subnet group [{{ loop.index }}/{{ loop.length }}]
+  rds_subnet_group:
+    aws_access_key:
+    aws_secret_key:
+    description: {{ subnet_group['DBSubnetGroupDescription'] }}
+    ec2_url:
+    name: {{ subnet_group['DBSubnetGroupName'] }}
+    profile:
+    region: {{ region }}
+    security_token:
+    state:
+    subnets:
+    {% for subnet in subnet_group['Subnets'] %}
+      - {{ subnet['SubnetIdentifier'] }}
+    {% endfor %}
+    validate_certs:
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
+
+{% endfor %}

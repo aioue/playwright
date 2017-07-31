@@ -1,0 +1,30 @@
+---
+
+{% for param_group in json %}
+- name: rds param group [{{ loop.index }}/{{ loop.length }}]
+  rds_param_group:
+    aws_access_key:
+    aws_secret_key:
+    description: {{ param_group['DBParameterGroupDescription'] }}
+    ec2_url:
+    engine: {{ param_group['DBParameterGroupFamily'] }}
+    immediate:
+    name: {{ param_group['DBParameterGroupName'] }}
+    params:
+    {% for param in rds_describe_db_parameters(param_group['DBParameterGroupName']) %}
+      {% if param['ParameterValue'] is defined and (param['IsModifiable']) %}
+      {{ param['ParameterName'] }}: {{ param['ParameterValue'] }}
+      {% endif %}
+    {% endfor %}
+    profile:
+    region: {{ region }}
+    security_token:
+    state:
+    validate_certs:
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
+
+{% endfor %}

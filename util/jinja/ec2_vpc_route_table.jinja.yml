@@ -1,21 +1,9 @@
 ---
 
-# ansible template file for ec2_vpc_route_table
-
-#ansible 2.3.1.0
-#  config file =
-#  configured module search path = Default w/o overrides
-#  python version = 3.6.1 (default, Apr  4 2017, 09:40:21) [GCC 4.2.1 Compatible Apple LLVM 8.1.0 (clang-802.0.38)]
-
-
 # because we are making rules for existing route tables, we will be keying the creating by the name tag
 # routes not mentioned will be removed
 
-
-# test without changes (dry-run)
-# ansible-playbook translate_terraform.yml -i inventory/tf-vpc-euc1/ --check -vvv --step
-
-{# if in the list of "Routes" in this route, one of them has a key of 'GatewayId' that exists, and it's value is 'local', continue to next route #}
+# if in the list of "Routes" in this route, one of them has a key of 'GatewayId' that exists, and it's value is 'local', continue to next route
 # routes with origin: 'CreatRouteTable' are automatically made when the table is created and are usually default local routes and cannot be edited
 
 {% for route in json %}
@@ -49,8 +37,10 @@
       {{ tag['Key'] }}: {{ tag['Value'] }}
     {% endfor %}
     vpc_id: {{ route['VpcId'] }}
-  # https://github.com/ansible/ansible/issues/26291
-  # during check mode, ansible will ignore errors. AWS throws "EC2ResponseError: 412 Precondition Failed" errors. Request would have succeeded, but DryRun flag is set.
-  ignore_errors: "{% raw %}{{ ansible_check_mode }}{% endraw %}"
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
 
 {% endfor %}

@@ -1,0 +1,42 @@
+---
+
+- pause:
+    seconds: 4
+    prompt: PARTIAL - cannot get delivery_policy to return OK under check mode
+
+{% for topic in json %}
+{% set attributes = sns_get_topic_attributes(topic['TopicArn']) %}
+- name: sns topic [{{ loop.index }}/{{ loop.length }}]
+  sns_topic:
+    aws_access_key:
+    aws_secret_key:
+    delivery_policy:
+      # cannot get delivery_policy to return OK, under check mode. Could be a bug in the module, or a difference in the template that I cannot pin down
+      {% if attributes['EffectiveDeliveryPolicy']['http'] is defined and attributes['EffectiveDeliveryPolicy']['http']['defaultHealthyRetryPolicy'] %}
+      {% else %}
+      {# {{ attributes['EffectiveDeliveryPolicy'] | to_yaml_tpa | indent(width=6, indentfirst=False) }} #}
+      {% endif %}
+    display_name: {{ attributes['DisplayName'] }}
+    ec2_url:
+    name: {{ '[^:]+$' | regex_search(topic['TopicArn']) }}
+    policy:
+      {{ attributes['Policy'] | to_yaml_tpa | indent(width=6, indentfirst=False) }}
+    profile:
+    purge_subscriptions: no
+    region: {{ region }}
+    security_token:
+    state: present
+    subscriptions:
+    {#| to_nice_json | to_yaml_tpa | indent(width=8, indentfirst=False) }} #}
+    {% for subscription in sns_list_subscriptions_by_topic(topic['TopicArn']) %}
+      - endpoint: {{ subscription['Endpoint'] }}
+        protocol: {{ subscription['Protocol'] }}
+    {% endfor %}
+    validate_certs:
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
+
+{% endfor %}

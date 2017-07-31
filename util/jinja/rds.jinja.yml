@@ -1,0 +1,68 @@
+---
+
+# vars not used:
+# MonitoringInterval
+# CopyTagsToSnapshot
+
+{% for db in json %}
+- name: manage rds instance [{{ loop.index }}/{{ loop.length }}]
+  rds:
+    apply_immediately:
+    aws_access_key:
+    aws_secret_key:
+    backup_retention: {{ db['BackupRetentionPeriod'] }}
+    backup_window: {{ db['PreferredBackupWindow'] }}
+    character_set_name:
+    # this is not set to 'create', as we cannot build the same DBs without things like passwords, which are not accessible from the API
+    command: modify
+    db_engine: {{ db['Engine'] }}
+    db_name:
+    ec2_url:
+    engine_version: {{ db['EngineVersion'] }}
+    force_failover:
+    instance_name: {{ db['DBInstanceIdentifier'] }}
+    instance_type: {{ db['DBInstanceClass'] }}
+    iops:
+    license_model: {{ db ['LicenseModel'] }}
+    maint_window: {{ db['PreferredMaintenanceWindow'] }}
+    multi_zone: {{ db['multi_zone'] }}
+    new_instance_name:
+    option_group:
+    {% for option_group in db['OptionGroupMemberships'] %}
+      - {{ option_group['OptionGroupName'] }}
+    {% endfor %}
+    parameter_group:
+    {% for parameter_group in db['DBParameterGroups'] %}
+      - {{ parameter_group['DBParameterGroupName'] }}
+    {% endfor %}
+    password:
+    port: {{ db['Endpoint']['Port'] }}
+    profile:
+    publicly_accessible: {{ db['PubliclyAccessible'] }}
+    region: {{ region }}
+    security_groups:
+    security_token:
+    size: {{ db['AllocatedStorage'] }}
+    snapshot:
+    source_instance: {{ db['ReadReplicaSourceDBInstanceIdentifier'] }}
+    subnet: {{ db['DBSubnetGroup']['DBSubnetGroupName'] }}
+    tags:
+    {% for tag in rds_list_tags_for_resource(db['DBInstanceArn']) %}
+      {{ tag['Key'] }}: {{ tag['Value'] }}
+    {% endfor %}
+    upgrade: {{ db['AutoMinorVersionUpgrade'] }}
+    username: {{ db['MasterUsername'] }}
+    vpc_security_groups:
+    {% for group in db['VpcSecurityGroups'] %}
+      - {{ group['VpcSecurityGroupId'] }}
+    {% endfor %}
+    wait: yes
+    wait_timeout:
+    zone: {{ db['AvailabilityZone'] }}
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
+
+{% endfor %}

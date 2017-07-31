@@ -1,0 +1,28 @@
+---
+
+{% for bucket in json %}
+{% set location = get_bucket_location(bucket['Name']) %}
+- name: s3 bucket [{{ loop.index }}/{{ loop.length }}]
+  s3:
+    aws_access_key:
+    aws_secret_key:
+    bucket: {{ bucket['Name'] }}
+    mode: create
+    region: {% if location['LocationConstraint'] %}{{ location['LocationConstraint'] }}{% else %}us-east-1{% endif %}{{ space }}
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
+
+{#
+{% set tags = get_bucket_tagging(bucket['Name']) %}
+- name: bucket tags
+    {% if tags %}
+    {% for tag in tags %}
+      {{ tag['Key'] }}: {{ tag['Value'] }}
+    {% endfor %}
+    {% endif %}
+#}
+
+{% endfor %}

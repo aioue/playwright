@@ -1,0 +1,66 @@
+---
+
+{% for group in iam_list_groups() %}
+- name: iam group [{{ loop.index }}/{{ loop.length }}]
+  iam:
+    access_key_ids:
+    access_key_state:
+    aws_access_key:
+    aws_secret_key:
+    ec2_url:
+    groups:
+    iam_type: group
+    key_count:
+    name: {{ group['GroupName'] }}
+    new_name:
+    new_path:
+    password:
+    path: {{ group['Path'] }}
+    profile:
+    security_token:
+    state: present
+    trust_policy:
+    trust_policy_filepath:
+    update_password:
+    validate_certs:
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
+
+{% endfor %}
+
+{% for user in json %}
+- name: iam user [{{ loop.index }}/{{ loop.length }}]
+  iam:
+    access_key_ids:
+    access_key_state:
+    aws_access_key:
+    aws_secret_key:
+    ec2_url:
+    groups:
+    {% for group in iam_list_groups_for_user(user['UserName']) %}
+      - {{ group['GroupName'] }}
+    {% endfor %}
+    iam_type: user
+    key_count:
+    name: {{ user['UserName'] }}
+    new_name:
+    new_path:
+    password:
+    path: {{ user['Path'] }}
+    profile:
+    security_token:
+    state: present
+    trust_policy:
+    trust_policy_filepath:
+    update_password:
+    validate_certs:
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
+
+{% endfor %}

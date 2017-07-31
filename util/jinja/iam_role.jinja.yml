@@ -1,0 +1,26 @@
+---
+
+{% for role in json %}
+- name: iam role [{{ loop.index }}/{{ loop.length }}]
+  iam_role:
+    assume_role_policy_document: {{ role['AssumeRolePolicyDocument'] | tojson }}
+    aws_access_key:
+    aws_secret_key:
+    ec2_url:
+    managed_policy:
+    {% for policy in iam_list_attached_role_policies(role['RoleName']) %}
+      - {{ policy['PolicyArn'] }}
+    {% endfor %}
+    name: {{ role['RoleName'] }}
+    path: {{ role['Path'] }}
+    profile:
+    security_token:
+    state: present
+    validate_certs:
+  {% if fail_on_change %}
+  # stop on changed so we don't break anything in bulk (1 break possible!)
+  register: command_result
+  failed_when: command_result | changed
+  {% endif %}
+
+{% endfor %}
