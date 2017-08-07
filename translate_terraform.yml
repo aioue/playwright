@@ -1,47 +1,7 @@
 ---
 
-## provision
-# route tables
-# ec2_vpc_route_table [DONE]
-
-# security groups
-# ec2_group [DONE]
-
-# EIPs
-# ec2_eip [DONE]
-
-# route53
-# route53 zone [partial - blocked pending check mode]
-# route53 record
-
-# ELBs
-# ec2_elb_lb [partial - blocked pending check mode ]
-
-# RDS
-# rds [partial - blocked pending check mode]
-# rds_subnet_group [partial]
-# rds_param_group
-
-# vpc
-# vpc peering [part of route tables?]
-# subnets
-# iam roles
-# instances (+ userdata?)
-# route53 health check
-# certificates
-# sns topics
-# auto scaling groups
-# s3 bucket
-
-## configure (needs routing access)
-
-## Ansible issues/bugs stopping deployment
-# ec2_elb_lb check mode
-# route53_zone check mode
-# rds check mode
-
-# example run:
-# ansible-playbook translate_terraform.yml -i inventory/tf-vpc-euc1/ --check -vvvvv --tags ec2_eip --step
+# example test (check) run:
+# ansible-playbook translate_terraform.yml -i inventory/tf-vpc-euc1/ --check -v --tags ec2_eip --step
 
 - hosts: localhost
   connection: local
@@ -50,55 +10,55 @@
 #    regions: [ 'eu-central-1', 'eu-west-1' ]
   tasks:
 
-    - include: util/{{ item }}/tasks/ec2_vpc_route_table.yml
+    - include: "{{ item }}/tasks/ec2_vpc_route_table.yml"
       with_items: "{{ regions }}"
       tags: ec2_vpc_route_table
 
-    - include: util/{{ item }}/tasks/ec2_group.yml
+    - include: "{{ item }}/tasks/ec2_group.yml"
       with_items: "{{ regions }}"
       tags: ec2_group
 
-    - include: util/{{ item }}/tasks/ec2_eip.yml
+    - include: "{{ item }}/tasks/ec2_eip.yml"
       with_items: "{{ regions }}"
       tags: ec2_eip
 
-    - include: util/{{ item }}/tasks/route53_zone.yml
+    - include: "{{ item }}/tasks/route53_zone.yml"
       with_items: "{{ regions }}"
       tags: route53_zone
 
-    - include: util/{{ item }}/tasks/route53.yml
+    - include: "{{ item }}/tasks/route53.yml"
       with_items: "{{ regions }}"
       tags: route53
 
-    - include: util/{{ item }}/tasks/ec2_elb_lb.yml
+    - include: "{{ item }}/tasks/ec2_elb_lb.yml"
       with_items: "{{ regions }}"
       tags: ec2_elb_lb
 
-    - include: util/{{ item }}/tasks/rds.yml
+    - include: "{{ item }}/tasks/rds.yml"
       with_items: "{{ regions }}"
       tags: rds
 
-    - include: util/{{ item }}/tasks/rds_subnet_group.yml
+    - include: "{{ item }}/tasks/rds_subnet_group.yml"
       with_items: "{{ regions }}"
       tags: rds_subnet_group
 
-    - include: util/{{ item }}/tasks/rds_param_group.yml
+    - include: "{{ item }}/tasks/rds_param_group.yml"
       with_items: "{{ regions }}"
       tags: rds_param_group
 
-    - include: util/{{ item }}/tasks/iam.yml
+    - include: "{{ item }}/tasks/iam.yml"
       with_items: "{{ regions }}"
       tags: iam
 
-    - include: util/{{ item }}/tasks/iam_role.yml
+    - include: "{{ item }}/tasks/iam_role.yml"
       with_items: "{{ regions }}"
       tags: iam_role
 
-    - include: util/{{ item }}/tasks/sns_topic.yml
+    - include: "{{ item }}/tasks/sns_topic.yml"
       with_items: "{{ regions }}"
       tags: sns_topic
 
-    - include: util/{{ item }}/tasks/s3.yml
+    - include: "{{ item }}/tasks/s3.yml"
       with_items: "{{ regions }}"
       tags: s3
 

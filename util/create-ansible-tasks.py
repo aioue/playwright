@@ -20,9 +20,11 @@ snsc = None
 
 
 def main():
+    # OPTIONS
     region = 'eu-central-1'
     # region = 'eu-west-1'
-    fail_on_change = True
+    fail_on_change = False
+    # /OPTIONS
 
     print "Region: " + region
 
